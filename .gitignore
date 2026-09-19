@@ -69,6 +69,10 @@ checkpoints/
 data/
 datasets/
 
+# Firebase project configuration
+!firebase.json
+!firestore.indexes.json
+
 # Logs
 logs/
 *.log
