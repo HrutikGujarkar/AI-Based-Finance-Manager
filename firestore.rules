@@ -1,0 +1,146 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    function isValidUserData() {
+      return request.resource.data.size() > 0 &&
+             request.resource.data.name is string &&
+             request.resource.data.email is string &&
+             request.resource.data.currency is string &&
+             request.resource.data.role in ['user', 'admin'];
+    }
+    
+    function isValidExpenseData() {
+      return request.resource.data.size() > 0 &&
+             request.resource.data.amount is number &&
+             request.resource.data.amount > 0 &&
+             request.resource.data.currency is string &&
+             request.resource.data.category is string &&
+             request.resource.data.transactionDate is timestamp;
+    }
+    
+    function isValidBudgetData() {
+      return request.resource.data.size() > 0 &&
+             request.resource.data.amount is number &&
+             request.resource.data.amount > 0 &&
+             request.resource.data.currency is string &&
+             request.resource.data.category is string &&
+             request.resource.data.period is string &&
+             request.resource.data.startDate is timestamp &&
+             request.resource.data.endDate is timestamp;
+    }
+    
+    function isValidGoalData() {
+      return request.resource.data.size() > 0 &&
+             request.resource.data.name is string &&
+             request.resource.data.targetAmount is number &&
+             request.resource.data.targetAmount > 0 &&
+             request.resource.data.currency is string &&
+             request.resource.data.targetDate is timestamp;
+    }
+    
+    // Collection rules
+    match /users/{userId} {
+      // User document rules
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId) && 
+                       isValidUserData() &&
+                       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']);
+      
+      // Expenses subcollection
+      match /expenses/{expenseId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidExpenseData();
+        allow update: if isOwner(userId) && isValidExpenseData();
+        allow delete: if isOwner(userId);
+      }
+      
+      // Budgets subcollection
+      match /budgets/{budgetId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidBudgetData();
+        allow update: if isOwner(userId) && isValidBudgetData();
+        allow delete: if isOwner(userId);
+      }
+      
+      // Goals subcollection
+      match /goals/{goalId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidGoalData();
+        allow update: if isOwner(userId) && isValidGoalData();
+        allow delete: if isOwner(userId);
+      }
+      
+      // Insights subcollection
+      match /insights/{insightId} {
+        allow read: if isOwner(userId);
+        allow create: if false; // Created by backend only
+        allow update: if isOwner(userId) && 
+                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']);
+        allow delete: if isOwner(userId);
+      }
+      
+      // Anomalies subcollection
+      match /anomalies/{anomalyId} {
+        allow read: if isOwner(userId);
+        allow create: if false; // Created by backend only
+        allow update: if isOwner(userId) && 
+                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isAcknowledged', 'isFalsePositive']);
+        allow delete: if isOwner(userId);
+      }
+      
+      // Forecasts subcollection
+      match /forecasts/{forecastId} {
+        allow read: if isOwner(userId);
+        allow create: if false; // Created by backend only
+        allow update: if false; // Updated by backend only
+        allow delete: if false; // Managed by retention policy
+      }
+      
+      // Notifications subcollection
+      match /notifications/{notificationId} {
+        allow read: if isOwner(userId);
+        allow create: if false; // Created by backend only
+        allow update: if isOwner(userId) && 
+                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']);
+        allow delete: if isOwner(userId);
+      }
+    }
+    
+    // Global collections
+    
+    // Categories collection
+    match /categories/{categoryId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Learning resources collection
+    match /learning_resources/{resourceId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Admin logs collection
+    match /admin_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if false; // Created by backend only
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+  }
+}

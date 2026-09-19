@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+  color: #172033;
+  background: #eef4f2;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(255, 255, 255, 0.95), transparent 32rem),
+    linear-gradient(135deg, #eef4f2 0%, #f7f6f0 52%, #e6f0ec 100%);
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button,
+a {
+  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgba(13, 148, 136, 0.35);
+  outline-offset: 2px;
+}
+
+::selection {
+  color: #ffffff;
+  background: #0f766e;
+}
+
+code {
+  font-family: 'Cascadia Code', Consolas, monospace;
+}
